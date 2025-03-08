@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Shopping Cart</title>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+	<link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+
+<section class="cart-wrapper">
+	<div class="cart-container">
+		<div class="cart-items">
+			<% cartItems.forEach(function(item, index) { %>
+				<div class="cart-item" id="cart-item-<%= item.id %>">
+					<div class="cart-item-img-wrapper">
+						<img src="<%= item.image %>" alt="Product Image">
+					</div>
+					<div class="cart-item-details">
+						<div class="cart-item-header">
+							<h3 class="cart-item-title"><%= item.id %></h3>
+							<p class="cart-item-price">$<span id="price-<%= item.id %>"><%= item.price %></span></p>
+						</div>
+						<p class="cart-item-type"><%= item.type %> | <%= item.collection %></p>
+						<p class="cart-item-size">Size: <%= item.size %></p>
+						<div class="cart-item-quantity">
+							<button class="quantity-btn decrease" onclick="changeQuantity('<%= item.id %>', <%= item.price %>, -1)">-</button>
+							<input type="text" class="quantity-input" id="quantity-<%= item.id %>" value="<%= item.quantity %>" readonly>
+							<button class="quantity-btn increase" onclick="changeQuantity('<%= item.id %>', <%= item.price %>, 1)">+</button>
+						</div>
+					</div>
+				</div>
+			<% }); %>
+		</div>
+
+		<div class="cart-summary">
+			<h3>Summary</h3>
+			<form id="checkout-form" action="/create-checkout-session" method="POST">
+				<div id="summary-items">
+					<% let total = 0; %>
+					<% cartItems.forEach(function(item, index) { %>
+						<div class="summary-item" id="summary-item-<%= item.id %>">
+							<p><%= item.id %></p>
+							<p>$<span id="summary-price-<%= item.id %>"><%= (item.price * item.quantity).toFixed(2) %></span></p>
+							<input type="hidden" name="items[<%= index %>][id]" value="<%= item.id %>">
+							<input type="hidden" name="items[<%= index %>][price]" value="<%= item.price %>">
+							<input type="hidden" name="items[<%= index %>][quantity]" id="hidden-quantity-<%= item.id %>" value="<%= item.quantity %>">
+						</div>
+						<% total += item.price * item.quantity; %>
+					<% }); %>
+				</div>
+				<p class="total-price">Total: $<span id="total-price"><%= total.toFixed(2) %></span></p>
+				<button type="submit" class="checkout-button">Checkout</button>
+			</form>
+		</div>
+	</div>
+</section>
+
+<script>
+  function changeQuantity(itemId, price, change) {
+      let quantityInput = document.getElementById(`quantity-${itemId}`);
+      let summaryPrice = document.getElementById(`summary-price-${itemId}`);
+      let hiddenQuantity = document.getElementById(`hidden-quantity-${itemId}`);
+      let totalPriceElement = document.getElementById("total-price");
+
+      let currentQuantity = parseInt(quantityInput.value, 10);
+      let newQuantity = Math.max(currentQuantity + change, 1); // Prevents negative values
+
+      quantityInput.value = newQuantity;
+      hiddenQuantity.value = newQuantity;
+
+      // Update the summary price
+      let newItemTotal = (price * newQuantity).toFixed(2);
+      summaryPrice.textContent = newItemTotal;
+
+      // Update total price
+      let total = Array.from(document.querySelectorAll(".summary-item")).reduce((sum, item) => {
+          return sum + parseFloat(item.querySelector("span").textContent);
+      }, 0);
+      
+      totalPriceElement.textContent = total.toFixed(2);
+  }
+
+  document.getElementById("checkout-form").addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const formData = new FormData(this);
+      const items = [];
+
+      for (const [key, value] of formData.entries()) {
+          const match = key.match(/items\[(\d+)]\[(.+)]/);
+          if (match) {
+              const index = match[1];
+              const field = match[2];
+
+              if (!items[index]) items[index] = {};
+              items[index][field] = value;
+          }
+      }
+
+      try {
+          const response = await fetch("/create-checkout-session", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ items }),
+          });
+
+          if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(`HTTP Error: ${response.status} - ${errorText}`);
+          }
+
+          const data = await response.json();
+          if (data.url) {
+              window.location.href = data.url;
+          } else {
+              throw new Error("Invalid response from server");
+          }
+      } catch (error) {
+          console.error("Error:", error);
+          alert("Failed to start checkout. Check the console for details.");
+      }
+  });
+</script>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,29 @@
+[
+	{
+		"id": "BN-332-424-4W",
+		"type": "Classic",
+		"collection": "Geometry",
+		"price": 24,
+		"quantity": 1,
+		"size": "45 cm",
+		"image": "/images/cap1.png"
+	},
+	{
+		"id": "BN-333-425-4X",
+		"type": "Classic",
+		"collection": "Geometry",
+		"price": 24,
+		"quantity": 1,
+		"size": "45 cm",
+		"image": "/images/cap2.png"
+	},
+	{
+		"id": "BN-334-426-4Y",
+		"type": "Classic",
+		"collection": "Geometry",
+		"price": 24,
+		"quantity": 1,
+		"size": "45 cm",
+		"image": "/images/cap3.png"
+	}
+]
